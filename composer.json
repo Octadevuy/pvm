@@ -17,9 +17,10 @@
         "psr-4": { "Tests\\": "tests/" }
     },
     "require": {
-        "php": "^7.1",
+        "php": "^7.3",
         "formapro/values": "^0.5",
         "ramsey/uuid": "^3",
+        "endyjasmi/cuid": "^2",
         "psr/log": "^1"
     },
     "require-dev": {

@@ -22,7 +22,6 @@ class Transition
 
     public function __construct()
     {
-        $this->setId(Uuid::generate());
         $this->setWeight(1);
         $this->setAsync(false);
         $this->setActive(true);

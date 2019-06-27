@@ -1,6 +1,7 @@
 <?php
 namespace Formapro\Pvm;
 
+use EndyJasmi\Cuid;
 use Formapro\Pvm\Builder\NodeBuilder;
 use Formapro\Pvm\Builder\TransitionBuilder;
 use function Formapro\Values\add_value;
@@ -16,7 +17,7 @@ class ProcessBuilder
         $this->process = $process ?: Process::create();
 
         if (false == get_value($this->process, 'id')) {
-            $this->process->setId(Uuid::generate());
+            $this->process->setId($this->genId($this->process));
         }
     }
 
@@ -38,8 +39,18 @@ class ProcessBuilder
 
     public function createNode(string $id = null, string $behavior = null): NodeBuilder
     {
-        $node = Node::create();
-        $node->setId($id ?: Uuid::generate());
+        return $this->createCustomNode(Node::class, $id, $behavior);
+    }
+
+    public function createCustomNode(string $class, string $id = null, string $behavior = null): NodeBuilder
+    {
+        /** @var Node $node */
+        $node = $class::create();
+        if (false == $node instanceof Node) {
+            throw new \InvalidArgumentException(sprintf('The class "%s" must be a child of "%s" class', $class, Node::class));
+        }
+
+        $node->setId($id ?: $this->genId($node));
         $node->setBehavior($behavior);
         $node->setProcess($this->process);
 
@@ -71,8 +82,8 @@ class ProcessBuilder
             throw new \InvalidArgumentException('The from argument is invalid. Must be string or Node instance.');
         }
 
-
         $transition = Transition::create();
+        $transition->setId($this->genId($transition));
         $transition->setName($name);
         $transition->setProcess($this->process);
         $from && $transition->setFrom($from);
@@ -117,5 +128,18 @@ class ProcessBuilder
     public function getProcess(): Process
     {
         return $this->process;
+    }
+
+    protected function genId(object $elem): string
+    {
+        if ($elem instanceof Process) {
+            return Uuid::generate();
+        }
+
+        if ($elem instanceof Node || $elem instanceof Transition) {
+            return Cuid::slug();
+        }
+
+        throw new \InvalidArgumentException(sprintf('Cannot generate id for object "%s"', get_class($elem)));
     }
 }
