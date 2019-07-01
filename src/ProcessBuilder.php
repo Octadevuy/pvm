@@ -83,11 +83,11 @@ class ProcessBuilder
         }
 
         $transition = Transition::create();
-        $transition->setId($this->genId($transition));
         $transition->setName($name);
         $transition->setProcess($this->process);
         $from && $transition->setFrom($from);
         $to && $transition->setTo($to);
+        $transition->setId($this->genId($transition));
 
         set_object($this->process, 'transitions.'.$transition->getId(), $transition);
 
