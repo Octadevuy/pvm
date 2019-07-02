@@ -17,84 +17,51 @@ class Node
      */
     private $_process;
 
-    /**
-     * @return Process
-     */
     public function getProcess(): Process
     {
         return $this->_process;
     }
 
-    /**
-     * @param Process $process
-     */
-    public function setProcess(Process $process)
+    public function setProcess(Process $process): void
     {
         $this->_process = $process;
     }
 
-    /**
-     * @return string
-     */
     public function getId(): string
     {
         return get_value($this, 'id');
     }
 
-    /**
-     * @param string $id
-     */
-    public function setId(string $id)
+    public function setId(string $id): void
     {
         set_value($this, 'id', $id);
     }
 
-    /**
-     * @return string
-     */
     public function getLabel(): string
     {
         return get_value($this, 'label', '');
     }
 
-    /**
-     * @param string $label
-     */
-    public function setLabel(string $label)
+    public function setLabel(string $label): void
     {
         set_value($this, 'label', $label);
     }
 
-    /**
-     * @return string
-     */
-    public function getBehavior(): string
+    public function getBehavior(): ?string
     {
         return get_value($this, 'behavior');
     }
 
-    /**
-     * @param string|null $behavior
-     */
-    public function setBehavior(string $behavior = null)
+    public function setBehavior(?string $behavior): void
     {
         set_value($this, 'behavior', $behavior);
     }
 
-    /**
-     * @param string $key
-     * @param mixed  $value
-     */
-    public function setOption(string $key, $value)
+    public function setOption(string $key, $value): void
     {
         set_value($this, 'option.'.$key, $value);
     }
 
-    /**
-     * @param string $key
-     *
-     * @return mixed
-     */
     public function getOption(string $key)
     {
         return get_value($this, 'option.'.$key);

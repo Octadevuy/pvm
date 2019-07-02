@@ -1,11 +1,9 @@
 <?php
 namespace Formapro\Pvm;
 
-use function Formapro\Values\add_value;
 use function Formapro\Values\get_object;
 use function Formapro\Values\get_objects;
 use function Formapro\Values\get_value;
-use function Formapro\Values\set_object;
 use function Formapro\Values\set_value;
 use Formapro\Values\ValuesTrait;
 
@@ -22,7 +20,7 @@ class Process
 
     protected $objects = [];
 
-    public function setId(string $id)
+    public function setId(string $id): void
     {
         set_value($this, 'id', $id);
     }
@@ -32,7 +30,7 @@ class Process
         return get_value($this, 'id');
     }
 
-    public function setExecutionId(string $id)
+    public function setExecutionId(string $id): void
     {
         set_value($this, 'executionId', $id);
     }
@@ -42,11 +40,6 @@ class Process
         return get_value($this, 'executionId');
     }
 
-    /**
-     * @param string $id
-     *
-     * @return Node
-     */
     public function getNode(string $id): Node
     {
         /** @var Node $node */
@@ -118,11 +111,6 @@ class Process
         return $startTransitions;
     }
 
-    /**
-     * @param string $id
-     *
-     * @return Transition
-     */
     public function getTransition(string $id): Transition
     {
         /** @var Transition $transition */
@@ -136,8 +124,6 @@ class Process
     }
 
     /**
-     * @param Node $node
-     *
      * @return Transition[]
      */
     public function getInTransitions(Node $node): array
@@ -153,8 +139,6 @@ class Process
     }
 
     /**
-     * @param Node $node
-     *
      * @return Transition[]
      */
     public function getOutTransitions(Node $node): array
@@ -170,9 +154,6 @@ class Process
     }
 
     /**
-     * @param Node $node
-     * @param string $name
-     *
      * @return Transition[]
      */
     public function getOutTransitionsWithName(Node $node, string $name): array
