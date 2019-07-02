@@ -9,8 +9,8 @@ use Formapro\Pvm\Process;
 use Formapro\Pvm\Token;
 use Formapro\Pvm\TokenTransition;
 use Formapro\Pvm\Transition;
+use function Formapro\Values\build_object;
 use Graphp\GraphViz\GraphViz;
-use function Formapro\Values\get_object;
 use function Formapro\Values\get_value;
 
 class VisualizeFlow
@@ -118,7 +118,8 @@ class VisualizeFlow
     private function createVertex(Graph $graph, Node $node)
     {
         /** @var Options $options */
-        $options = get_object($node, 'visual', Options::class) ?: new Options();
+        $options = build_object(Options::class, get_value($node, 'visual', []));
+
         $vertex = $graph->createVertex($node->getId());
         $vertex->setAttribute('graphviz.label', $node->getLabel() ?: $node->getId());
         $vertex->setAttribute('graphviz.id', $node->getId());
