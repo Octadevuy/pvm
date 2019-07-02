@@ -12,7 +12,7 @@ trait CreateTrait
      */
     public static function create(array $data = [])
     {
-        return build_object(ClassClosure::create(), array_replace([
+        return build_object(static::class, array_replace([
             'schema' => static::SCHEMA,
         ], $data));
     }
