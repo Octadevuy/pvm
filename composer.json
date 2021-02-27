@@ -1,5 +1,5 @@
 {
-    "name": "makasim/pvm",
+    "name": "bridit/pvm",
     "license": "MIT",
     "type": "lib",
     "description": "The library provides us with a frame to build a workflow or a business process such as BPMN. Could execute tasks in parallel or delayed tasks",
@@ -19,12 +19,12 @@
     "require": {
         "php": "^7.3",
         "formapro/values": "^0.5",
-        "ramsey/uuid": "^3",
+        "ramsey/uuid": "^3.0|^4.0",
         "endyjasmi/cuid": "^2",
         "psr/log": "^1"
     },
     "require-dev": {
-        "enqueue/simple-client": "^0.9"
+        "enqueue/simple-client": "^0.10"
     },
     "replace": {
         "formapro/pvm": "*"
