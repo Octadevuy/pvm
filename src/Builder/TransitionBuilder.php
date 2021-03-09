@@ -1,4 +1,5 @@
 <?php
+
 namespace Formapro\Pvm\Builder;
 
 use Formapro\Pvm\ProcessBuilder;
@@ -10,93 +11,93 @@ use function Formapro\Values\set_value;
 
 class TransitionBuilder
 {
-    /**
-     * @var ProcessBuilder
-     */
-    private $processBuilder;
+  /**
+   * @var ProcessBuilder
+   */
+  private $processBuilder;
 
-    /**
-     * @var Transition
-     */
-    private $transition;
+  /**
+   * @var Transition
+   */
+  private $transition;
 
-    public function __construct(ProcessBuilder $processBuilder, Transition $transition)
-    {
-        $this->processBuilder = $processBuilder;
-        $this->transition = $transition;
+  public function __construct(ProcessBuilder $processBuilder, Transition $transition)
+  {
+    $this->processBuilder = $processBuilder;
+    $this->transition = $transition;
 
-        if (false == get_value($this->transition, 'id')) {
-            $this->transition->setId(Uuid::generate());
-        }
+    if (false == get_value($this->transition, 'id')) {
+      $this->transition->setId(Uuid::generate());
+    }
+  }
+
+  public function setId(string $id): self
+  {
+    $oldId = get_value($this->transition, 'id');
+
+    if (null !== $oldId) {
+      set_object($this->processBuilder->getProcess(), 'transitions.' . $oldId, null);
     }
 
-    public function setId(string $id): self
-    {
-        $oldId = get_value($this->transition, 'id');
+    $this->transition->setId($id);
+    set_object($this->processBuilder->getProcess(), 'transitions.' . $id, $this->transition);
 
-        if (null !== $oldId) {
-            set_object($this->processBuilder->getProcess(), 'transitions.'.$oldId, null);
-        }
+    if ($to = $this->transition->getTo()) {
+      $inTransitions = get_value($this->processBuilder->getProcess(), 'inTransitions.' . $to->getId());
+      if (false !== $i = array_search($oldId, $inTransitions)) {
+        $inTransitions[$i] = $id;
 
-        $this->transition->setId($id);
-        set_object($this->processBuilder->getProcess(), 'transitions.'.$id, $this->transition);
-        
-        if ($to = $this->transition->getTo()) {
-            $inTransitions = get_value($this->processBuilder->getProcess(), 'inTransitions.'.$to->getId());
-            if (false !== $i = array_search($oldId, $inTransitions)) {
-                $inTransitions[$i] = $id;
-
-                set_value($this->processBuilder->getProcess(), 'inTransitions.'.$to->getId(), $inTransitions);
-            }
-        }
-
-        if ($from = $this->transition->getFrom()) {
-            $outTransitions = get_value($this->processBuilder->getProcess(), 'outTransitions.'.$from->getId());
-            if (false !== $i = array_search($oldId, $outTransitions)) {
-                $outTransitions[$i] = $id;
-
-                set_value($this->processBuilder->getProcess(), 'outTransitions.'.$from->getId(), $outTransitions);
-            }
-        }
-
-        return $this;
+        set_value($this->processBuilder->getProcess(), 'inTransitions.' . $to->getId(), $inTransitions);
+      }
     }
 
-    public function setName(string $name): self
-    {
-        $this->transition->setName($name);
+    if ($from = $this->transition->getFrom()) {
+      $outTransitions = get_value($this->processBuilder->getProcess(), 'outTransitions.' . $from->getId());
+      if (false !== $i = array_search($oldId, $outTransitions)) {
+        $outTransitions[$i] = $id;
 
-        return $this;
+        set_value($this->processBuilder->getProcess(), 'outTransitions.' . $from->getId(), $outTransitions);
+      }
     }
 
-    public function setWeight(int $weight): self
-    {
-        $this->transition->setWeight($weight);
+    return $this;
+  }
 
-        return $this;
-    }
+  public function setName(string $name): self
+  {
+    $this->transition->setName($name);
 
-    public function setAsync(bool $async): self
-    {
-        $this->transition->setAsync($async);
+    return $this;
+  }
 
-        return $this;
-    }
+  public function setWeight(int $weight): self
+  {
+    $this->transition->setWeight($weight);
 
-    public function setActive(bool $active): self
-    {
-        $this->transition->setActive($active);
+    return $this;
+  }
 
-        return $this;
-    }
+  public function setAsync(bool $async): self
+  {
+    $this->transition->setAsync($async);
 
-    public function end(): ProcessBuilder
-    {
-        return $this->processBuilder;
-    }
+    return $this;
+  }
 
-    public function getTransition(): Transition
-    {
-        return $this->transition;
-    }
+  public function setActive(bool $active): self
+  {
+    $this->transition->setActive($active);
+
+    return $this;
+  }
+
+  public function end(): ProcessBuilder
+  {
+    return $this->processBuilder;
+  }
+
+  public function getTransition(): Transition
+  {
+    return $this->transition;
+  }
 }

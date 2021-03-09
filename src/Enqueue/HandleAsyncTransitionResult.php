@@ -1,4 +1,5 @@
 <?php
+
 namespace Formapro\Pvm\Enqueue;
 
 use Enqueue\Consumption\Result;
@@ -6,18 +7,18 @@ use Formapro\Pvm\Token;
 
 class HandleAsyncTransitionResult extends Result
 {
-    private $waitTokens = [];
+  private $waitTokens = [];
 
-    public function setWaitTokens(array $tokens)
-    {
-        $this->waitTokens = $tokens;
-    }
+  public function setWaitTokens(array $tokens)
+  {
+    $this->waitTokens = $tokens;
+  }
 
-    /**
-     * @return Token[]
-     */
-    public function getWaitTokens(): array
-    {
-        return $this->waitTokens;
-    }
+  /**
+   * @return Token[]
+   */
+  public function getWaitTokens(): array
+  {
+    return $this->waitTokens;
+  }
 }
