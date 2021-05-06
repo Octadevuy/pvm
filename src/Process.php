@@ -2,24 +2,35 @@
 
 namespace Formapro\Pvm;
 
-use function Formapro\Values\get_object;
-use function Formapro\Values\get_objects;
+use Bridit\Workflows\ValueObjects\TaskNode;
+use Formapro\Values\ValuesTrait;
 use function Formapro\Values\get_value;
 use function Formapro\Values\set_value;
-use Formapro\Values\ValuesTrait;
+use function Formapro\Values\get_values;
+use function Formapro\Values\get_object;
+use function Formapro\Values\get_objects;
+use function Formapro\Values\build_object;
 
 class Process
 {
-  const SCHEMA = 'http://pvm.forma-pro.com/schemas/Process.json';
+//  const SCHEMA = 'http://pvm.forma-pro.com/schemas/Process.json';
 
   use ValuesTrait {
     getValue as public;
     setValue as public;
   }
 
-  use CreateTrait;
-
   protected $objects = [];
+
+  /**
+   * @param array $data
+   *
+   * @return self|object
+   */
+  public static function create(array $data = [])
+  {
+    return build_object(static::class, $data);
+  }
 
   public function setId(string $id): void
   {
@@ -171,4 +182,10 @@ class Process
 
     return $transitions;
   }
+
+  public function toArray(): array
+  {
+    return get_values($this);
+  }
+
 }

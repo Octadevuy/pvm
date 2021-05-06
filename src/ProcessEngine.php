@@ -2,47 +2,49 @@
 
 namespace Formapro\Pvm;
 
-use Formapro\Pvm\Exception\InterruptExecutionException;
-use Formapro\Pvm\Exception\WaitExecutionException;
-use function Formapro\Values\set_value;
-use Psr\Log\LoggerInterface;
+use Throwable;
 use Psr\Log\NullLogger;
+use Psr\Log\LoggerInterface;
+use Formapro\Pvm\Exception\WaitExecutionException;
+use Formapro\Pvm\Exception\InterruptExecutionException;
+use function Formapro\Values\set_value;
 
-final class ProcessEngine implements DAL
+class ProcessEngine implements DAL
 {
+
   /**
    * @var BehaviorRegistry
    */
-  private $behaviorRegistry;
+  protected BehaviorRegistry $behaviorRegistry;
 
   /**
    * @var AsyncTransition
    */
-  private $asyncTransition;
+  protected AsyncTransition $asyncTransition;
 
   /**
    * @var DAL
    */
-  private $dal;
+  protected DAL $dal;
 
   /**
    * @var Transition[]
    */
-  private $asyncTokens;
+  protected array $asyncTokens;
 
   /**
    * @var Token[]
    */
-  private $waitTokens;
+  protected array $waitTokens;
 
   /**
-   * @var LoggerInterface
+   * @var LoggerInterface|null
    */
-  private $logger;
+  protected ?LoggerInterface $logger = null;
 
-  private $logException;
+  protected bool $logException;
 
-  private $exceptionLogged;
+  protected bool $exceptionLogged;
 
   public function __construct(
     BehaviorRegistry $behaviorRegistry,
@@ -67,9 +69,10 @@ final class ProcessEngine implements DAL
 
   /**
    * @param Token $token
-   * @param LoggerInterface $logger
+   * @param LoggerInterface|null $logger
    *
    * @return Token[]
+   * @throws Throwable
    */
   public function proceed(Token $token, LoggerInterface $logger = null)
   {
@@ -129,46 +132,17 @@ final class ProcessEngine implements DAL
 
       $token->addTransition(TokenTransition::createForNewState($token, TokenTransition::STATE_PASSED));
 
-      if (false == $behaviorResult) {
-        $tmpTransitions = [];
-        foreach ($token->getProcess()->getOutTransitions($node) as $transition) {
-          if (empty($transition->getName())) {
-            $tmpTransitions[] = $transition;
-          }
-        }
-      } elseif (is_string($behaviorResult)) {
-        $tmpTransitions = $token->getProcess()->getOutTransitionsWithName($node, $behaviorResult);
-        if (empty($tmpTransitions)) {
-          throw new \LogicException(sprintf('The transitions with the name %s could not be found', $behaviorResult));
-        }
-      } elseif ($behaviorResult instanceof Transition) {
-        $tmpTransitions = [$behaviorResult];
-      } elseif (is_array($behaviorResult)) {
-        $tmpTransitions = [];
-        foreach ($behaviorResult as $transition) {
-          if (is_string($transition)) {
-            $transitionsWithName = $token->getProcess()->getOutTransitionsWithName($node, $transition);
-            if (empty($transitionsWithName)) {
-              throw new \LogicException(sprintf('The transitions with the name %s could not be found', $transition));
-            }
+      if (true === $node->getConfig('pause_execution')) {
+        $this->persistToken($token);
 
-            $tmpTransitions = array_merge($tmpTransitions, $transitionsWithName);
-          } elseif ($transition instanceof Transition) {
-            $tmpTransitions[] = $transition;
-          } else {
-            throw new \LogicException('Unsupported element of array. Could be either instance of Transition or its name (string).');
-          }
-        }
-      } else {
-        throw new \LogicException('Unsupported behavior result. Could be either instance of Transition, an array of Transitions, null or transition name (string).');
+        $this->log('Execution stopped, waiting new interaction');
+
+        return;
       }
 
-      $transitions = [];
-      foreach ($tmpTransitions as $transition) {
-        $transitions[] = $transition;
-      }
+      $transitions = $this->getNextTransitions($token, $node, $behaviorResult);
 
-      if (false == $transitions) {
+      if (0 === count($transitions)) {
         $this->persistToken($token);
 
         $this->log('End execution');
@@ -177,7 +151,8 @@ final class ProcessEngine implements DAL
       }
 
       $first = true;
-      foreach ($transitions as $transition) {
+      foreach ($transitions as $transition)
+      {
         $this->log('Next transition: %s -> %s',
           $transition->getFrom() ? $transition->getFrom()->getLabel() : 'start',
           $transition->getTo() ? $transition->getTo()->getLabel() : 'end'
@@ -199,36 +174,16 @@ final class ProcessEngine implements DAL
 
       $this->persistToken($token);
     } catch (InterruptExecutionException $e) {
-      $tokenTransition = TokenTransition::createForNewState($token, TokenTransition::STATE_INTERRUPTED);
-      $tokenTransition->setReason($e->getMessage());
-      $token->addTransition($tokenTransition);
-
-      $this->persistToken($token);
-
+      $this->handleInterruptExecutionException($token, $e);
       return;
     } catch (WaitExecutionException $e) {
-      if ($e->isCreateWaitingTransition()) {
-        $tokenTransition = TokenTransition::createForNewState($token, TokenTransition::STATE_WAITING);
-        $tokenTransition->setReason($e->getMessage());
-
-        $token->addTransition($tokenTransition);
-      }
-
-      $this->waitTokens[] = $token;
-
-      $this->persistToken($token);
-
+      $this->handleWaitExecutionException($token, $e);
       return;
-    } catch (\Throwable $e) {
-      if ($this->logException && false == $this->exceptionLogged) {
-        set_value($tokenTransition, 'exception', (string)$e);
-        $this->persistToken($token);
-
-        $this->exceptionLogged = true;
-      }
-
+    } catch (Throwable $e) {
+      $this->handleThrowableException($token, $tokenTransition, $e);
       throw $e;
     }
+
   }
 
   private function transition(Token $token)
@@ -305,4 +260,96 @@ final class ProcessEngine implements DAL
   {
     $this->logException = $logException;
   }
+
+  /**
+   * @param Token $token
+   * @param Node $node
+   * @param mixed $behaviorResult
+   * @return array
+   */
+  private function getNextTransitions(Token $token, Node $node, $behaviorResult): array
+  {
+    if (false == $behaviorResult) {
+      $tmpTransitions = [];
+      foreach ($token->getProcess()->getOutTransitions($node) as $transition) {
+        if (empty($transition->getName())) {
+          $tmpTransitions[] = $transition;
+        }
+      }
+    } elseif (is_string($behaviorResult)) {
+      $tmpTransitions = $token->getProcess()->getOutTransitionsWithName($node, $behaviorResult);
+      if (empty($tmpTransitions)) {
+        throw new \LogicException(sprintf('The transitions with the name %s could not be found', $behaviorResult));
+      }
+    } elseif ($behaviorResult instanceof Transition) {
+      $tmpTransitions = [$behaviorResult];
+    } elseif (is_array($behaviorResult)) {
+      $tmpTransitions = [];
+      foreach ($behaviorResult as $transition) {
+        if (is_string($transition)) {
+          $transitionsWithName = $token->getProcess()->getOutTransitionsWithName($node, $transition);
+          if (empty($transitionsWithName)) {
+            throw new \LogicException(sprintf('The transitions with the name %s could not be found', $transition));
+          }
+
+          $tmpTransitions = array_merge($tmpTransitions, $transitionsWithName);
+        } elseif ($transition instanceof Transition) {
+          $tmpTransitions[] = $transition;
+        } else {
+          throw new \LogicException('Unsupported element of array. Could be either instance of Transition or its name (string).');
+        }
+      }
+    } else {
+      throw new \LogicException('Unsupported behavior result. Could be either instance of Transition, an array of Transitions, null or transition name (string).');
+    }
+
+    return $tmpTransitions;
+  }
+
+  /**
+   * @param Token $token
+   * @param InterruptExecutionException $e
+   */
+  private function handleInterruptExecutionException(Token $token, InterruptExecutionException $e)
+  {
+    $tokenTransition = TokenTransition::createForNewState($token, TokenTransition::STATE_INTERRUPTED);
+    $tokenTransition->setReason($e->getMessage());
+    $token->addTransition($tokenTransition);
+
+    $this->persistToken($token);
+  }
+
+  /**
+   * @param Token $token
+   * @param WaitExecutionException $e
+   */
+  private function handleWaitExecutionException(Token $token, WaitExecutionException $e)
+  {
+    if ($e->isCreateWaitingTransition()) {
+      $tokenTransition = TokenTransition::createForNewState($token, TokenTransition::STATE_WAITING);
+      $tokenTransition->setReason($e->getMessage());
+
+      $token->addTransition($tokenTransition);
+    }
+
+    $this->waitTokens[] = $token;
+
+    $this->persistToken($token);
+  }
+
+  /**
+   * @param Token $token
+   * @param TokenTransition $tokenTransition
+   * @param Throwable $e
+   */
+  private function handleThrowableException(Token $token, TokenTransition $tokenTransition, Throwable $e)
+  {
+    if ($this->logException && false == $this->exceptionLogged) {
+      set_value($tokenTransition, 'exception', (string) $e);
+      $this->persistToken($token);
+
+      $this->exceptionLogged = true;
+    }
+  }
+
 }

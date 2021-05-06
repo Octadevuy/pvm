@@ -2,20 +2,22 @@
 
 namespace Formapro\Pvm\Visual;
 
-use Fhaculty\Graph\Edge\Directed;
+use Formapro\Pvm\Node;
+use Formapro\Pvm\Token;
+use Formapro\Pvm\Process;
 use Fhaculty\Graph\Graph;
 use Fhaculty\Graph\Vertex;
-use Formapro\Pvm\Node;
-use Formapro\Pvm\Process;
-use Formapro\Pvm\Token;
-use Formapro\Pvm\TokenTransition;
+use Alom\Graphviz\RawText;
 use Formapro\Pvm\Transition;
-use function Formapro\Values\build_object;
 use Graphp\GraphViz\GraphViz;
+use Fhaculty\Graph\Edge\Directed;
+use Formapro\Pvm\TokenTransition;
 use function Formapro\Values\get_value;
+use function Formapro\Values\build_object;
 
 class VisualizeFlow
 {
+
   public function createGraph(Process $process)
   {
     $graph = new Graph();
@@ -31,11 +33,15 @@ class VisualizeFlow
     $startVertex = $this->createStartVertex($graph);
     $endVertex = $this->createEndVertex($graph);
 
-    foreach ($process->getNodes() as $node) {
+    foreach ($process->getNodes() as $node)
+    {
       $this->createVertex($graph, $node);
     }
 
-    foreach ($process->getTransitions() as $transition) {
+    $ended = false;
+
+    foreach ($process->getTransitions() as $transition)
+    {
       if (false == $transition->getFrom() && $transition->getTo()) {
         $this->createStartTransition($graph, $startVertex, $transition);
       }
@@ -44,7 +50,10 @@ class VisualizeFlow
         $this->createMiddleTransition($graph, $transition);
       }
 
-      if (empty($process->getOutTransitions($transition->getTo()))) {
+      if (1 === count($process->getInTransitions($transition->getTo())) && empty($process->getOutTransitions($transition->getTo()))) {
+        $this->createEndTransition($graph, $endVertex, $transition);
+      } else if (false === $ended && empty($process->getOutTransitions($transition->getTo()))) {
+        $ended = true;
         $this->createEndTransition($graph, $endVertex, $transition);
       }
     }
@@ -61,8 +70,11 @@ class VisualizeFlow
   {
     $endVertex = $this->createEndVertex($graph);
 
-    foreach ($tokens as $token) {
-      foreach ($token->getTransitions() as $tokenTransition) {
+    foreach ($tokens as $token)
+    {
+      foreach ($token->getTransitions() as $tokenTransition)
+      {
+
         $hasException = get_value($tokenTransition, 'exception', false);
 
         $transition = $tokenTransition->getTransition();
@@ -129,23 +141,40 @@ class VisualizeFlow
       $vertex->setAttribute('alom.graphviz_subgroup', $groupId);
     }
 
-    switch ($options->getType()) {
-      case 'gateway':
-        $shape = 'diamond';
-        break;
-      default:
-        $shape = 'box';
-    }
+    $shape = $this->getNodeShape($options);
 
     $vertex->setAttribute('graphviz.shape', $shape);
 
+    $label = ($node->getLabel() ?: $node->getId());
+    $tooltip = $node->getConfig('visual.tooltip') ?? $label;
+
     $vertex->setAttribute('alom.graphviz', [
-      'label' => $node->getLabel() ?: $node->getId(),
       'id' => $node->getId(),
+      'label' => new RawText('"' . $label . '"'),
+      'tooltip' => $tooltip,
+      'color' => $node->getConfig('visual.color') ?? 'black',
+      'fontsize' => 12,
       'shape' => $shape,
     ]);
 
     return $vertex;
+  }
+
+  /**
+   * @param Options $options
+   * @return string
+   */
+  private function getNodeShape(Options $options): string
+  {
+    if ($options->getType() === 'gateway') {
+      return 'diamond';
+    }
+
+    if (!empty($options->getType())) {
+      return $options->getType();
+    }
+
+    return 'box';
   }
 
   private function createStartTransition(Graph $graph, Vertex $from, Transition $transition)

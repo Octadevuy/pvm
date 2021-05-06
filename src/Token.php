@@ -2,11 +2,14 @@
 
 namespace Formapro\Pvm;
 
+use Formapro\Values\ValuesTrait;
+use Formapro\Pvm\State\ObjectState;
+use Formapro\Pvm\State\StatefulInterface;
+use function Formapro\Values\get_value;
+use function Formapro\Values\get_values;
+use function Formapro\Values\set_value;
 use function Formapro\Values\add_object;
 use function Formapro\Values\get_objects;
-use function Formapro\Values\get_value;
-use function Formapro\Values\set_value;
-use Formapro\Values\ValuesTrait;
 
 class Token
 {
@@ -19,14 +22,28 @@ class Token
   }
 
   /**
+   * @var StatefulInterface|null
+   */
+  private ?StatefulInterface $state;
+
+  /**
    * @var Process
    */
-  private $_process;
+  private Process $_process;
 
   /**
    * @var TokenTransition
    */
-  private $_currentTokenTransition;
+  private TokenTransition $_currentTokenTransition;
+
+  /**
+   * Token constructor.
+   * @param \Formapro\Pvm\State\StatefulInterface|null $state
+   */
+  public function __construct(StatefulInterface $state = null)
+  {
+    $this->state = $state ?? new ObjectState();
+  }
 
   /**
    * @param string $id
@@ -60,6 +77,9 @@ class Token
     $this->_process = $process;
   }
 
+  /**
+   * @param TokenTransition $transition
+   */
   public function addTransition(TokenTransition $transition)
   {
     $transition->setProcess($this->getProcess());
@@ -70,6 +90,17 @@ class Token
     $this->_currentTokenTransition = $transition;
   }
 
+  /**
+   * @param TokenTransition $transition
+   */
+  public function setCurrentTransition(TokenTransition $transition): void
+  {
+    $this->_currentTokenTransition = $transition;
+  }
+
+  /**
+   * @return TokenTransition
+   */
   public function getCurrentTransition(): TokenTransition
   {
     if (false == $this->_currentTokenTransition) {
@@ -101,23 +132,90 @@ class Token
     return $transitions;
   }
 
+  /**
+   * @return Node
+   */
   public function getTo(): Node
   {
     return $this->getCurrentTransition()->getTransition()->getTo();
   }
 
+  /**
+   * @return Node
+   */
   public function getFrom(): Node
   {
     return $this->getCurrentTransition()->getTransition()->getFrom();
   }
 
+  /**
+   * @param array|null $context
+   */
   public function setContext(?array $context): void
   {
     set_value($this, 'context', $context);
   }
 
+  /**
+   * @return array|null
+   */
   public function getContext(): ?array
   {
     return get_value($this, 'context');
   }
+
+  /**
+   * @param StatefulInterface $state
+   * @return void
+   */
+  public function replaceState(StatefulInterface $state): void
+  {
+    $this->state = $state;
+  }
+
+  /**
+   * @return StatefulInterface
+   */
+  public function getStateObject(): StatefulInterface
+  {
+    return $this->state;
+  }
+
+  /**
+   * @param array $values
+   * @return void
+   */
+  public function hydrateState(array $values): void
+  {
+    $this->state->hydrate($values);
+  }
+
+  /**
+   * @param string $key
+   * @param mixed $value
+   * @return void
+   */
+  public function setState(string $key, mixed $value): void
+  {
+    $this->state->setValue($key, $value);
+  }
+
+  /**
+   * @param string $key
+   * @param mixed|null $default
+   * @return mixed|null
+   */
+  public function getState(string $key, mixed $default = null)
+  {
+    return $this->state->getValue($key, $default);
+  }
+
+  /**
+   * @return array
+   */
+  public function toArray(): array
+  {
+    return array_merge(get_values($this), ['state' => $this->state->toArray()]);
+  }
+
 }

@@ -21,8 +21,8 @@
     }
   },
   "require": {
-    "php": "^7.4",
-    "formapro/values": "^0.5",
+    "php": "^8.0",
+    "bridit/values": "^0.6",
     "ramsey/uuid": "^3.0|^4.0",
     "endyjasmi/cuid": "^2",
     "psr/log": "^1"
