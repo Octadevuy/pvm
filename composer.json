@@ -1,5 +1,5 @@
 {
-  "name": "bridit/pvm",
+  "name": "Lay-z-D/pvm",
   "license": "MIT",
   "type": "lib",
   "description": "The library provides us with a frame to build a workflow or a business process such as BPMN. Could execute tasks in parallel or delayed tasks",
@@ -21,7 +21,7 @@
     }
   },
   "require": {
-    "php": "^8.0",
+    "php": "^7.1|^8.0",
     "bridit/values": "^0.6",
     "ramsey/uuid": "^3.0|^4.0",
     "endyjasmi/cuid": "^2",
