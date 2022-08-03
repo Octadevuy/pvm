@@ -143,7 +143,24 @@ class VisualizeFlow
       $vertex->setAttribute('alom.graphviz_subgroup', $groupId);
     }
 
-    $shape = $this->getNodeShape($options);
+    //$shape = $this->getNodeShape($options);
+	
+	switch ($node->getOption('type')) {  // original was "switch ($options->getType())"
+
+            case 'gateway':
+                $shape = 'diamond';
+				$color = 'black';
+                break;
+            case 'component':
+                $shape = 'component';
+                $color = 'orange';
+                break;
+            default:
+                $shape = 'box';
+				$color = 'black';
+        }
+	
+	if(!$color) { $color = $node->getConfig('visual.color') ?? 'black'; }
 
     $vertex->setAttribute('graphviz.shape', $shape);
 
@@ -154,7 +171,7 @@ class VisualizeFlow
       'id' => $node->getId(),
       'label' => new RawText('"' . $label . '"'),
       'tooltip' => $tooltip,
-      'color' => $node->getConfig('visual.color') ?? 'black',
+      'color' => $color,
       'fontsize' => 10,
       'shape' => $shape,
 	  'fontname' => 'helvetica',
@@ -193,6 +210,7 @@ class VisualizeFlow
       'label' => $transition->getName(),
       'id' => $transition->getId(),
 	  'fontname' => 'helvetica',
+	  'fontsize' => 10,
     ]);
   }
 
@@ -214,6 +232,7 @@ class VisualizeFlow
       'label' => $transition->getName(),
       'id' => $transition->getId(),
 	  'fontname' => 'helvetica',
+	  'fontsize' => 10,
     ]);
   }
 
@@ -234,6 +253,7 @@ class VisualizeFlow
       'id' => $transition->getId(),
       'label' => $transition->getName(),
 	  'fontname' => 'helvetica',
+	  'fontsize' => 10,
     ]);
   }
 
@@ -255,6 +275,7 @@ class VisualizeFlow
         'color' => 'blue',
         'shape' => 'circle',
 		'fontname' => 'helvetica',
+		'fontsize' => 10,
       ]);
     }
 
@@ -279,6 +300,7 @@ class VisualizeFlow
         'color' => 'red',
         'shape' => 'circle',
 		'fontname' => 'helvetica',
+		'fontsize' => 10,
       ]);
     }
 
