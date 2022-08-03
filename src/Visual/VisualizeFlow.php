@@ -27,7 +27,9 @@ class VisualizeFlow
 //        $graph->setAttribute('graphviz.graph.splines', 'ortho');
     $graph->setAttribute('alom.graphviz', [
       'rankdir' => 'TB',
-      'ranksep' => 1,
+      'ranksep' => 0.2,
+	  'size' => '10,100',
+	  'fontname' => 'helvetica',
     ]);
 
     $startVertex = $this->createStartVertex($graph);
@@ -153,8 +155,9 @@ class VisualizeFlow
       'label' => new RawText('"' . $label . '"'),
       'tooltip' => $tooltip,
       'color' => $node->getConfig('visual.color') ?? 'black',
-      'fontsize' => 12,
+      'fontsize' => 10,
       'shape' => $shape,
+	  'fontname' => 'helvetica',
     ]);
 
     return $vertex;
@@ -189,6 +192,7 @@ class VisualizeFlow
     $edge->setAttribute('alom.graphviz', [
       'label' => $transition->getName(),
       'id' => $transition->getId(),
+	  'fontname' => 'helvetica',
     ]);
   }
 
@@ -209,6 +213,7 @@ class VisualizeFlow
     $edge->setAttribute('alom.graphviz', [
       'label' => $transition->getName(),
       'id' => $transition->getId(),
+	  'fontname' => 'helvetica',
     ]);
   }
 
@@ -228,6 +233,7 @@ class VisualizeFlow
     $edge->setAttribute('alom.graphviz', [
       'id' => $transition->getId(),
       'label' => $transition->getName(),
+	  'fontname' => 'helvetica',
     ]);
   }
 
@@ -248,6 +254,7 @@ class VisualizeFlow
         'label' => 'Start',
         'color' => 'blue',
         'shape' => 'circle',
+		'fontname' => 'helvetica',
       ]);
     }
 
@@ -271,6 +278,7 @@ class VisualizeFlow
         'label' => 'End',
         'color' => 'red',
         'shape' => 'circle',
+		'fontname' => 'helvetica',
       ]);
     }
 
