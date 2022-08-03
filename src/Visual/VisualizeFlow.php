@@ -40,7 +40,7 @@ class VisualizeFlow
       $this->createVertex($graph, $node);
     }
 
-    $ended = false;
+    //$ended = false; gives error: "Fhaculty\Graph\Exception\UnderflowException is caught. Message Does not contain any edges"
 
     foreach ($process->getTransitions() as $transition)
     {
@@ -52,12 +52,18 @@ class VisualizeFlow
         $this->createMiddleTransition($graph, $transition);
       }
 
-      if (1 === count($process->getInTransitions($transition->getTo())) && empty($process->getOutTransitions($transition->getTo()))) {
-        $this->createEndTransition($graph, $endVertex, $transition);
-      } else if (false === $ended && empty($process->getOutTransitions($transition->getTo()))) {
-        $ended = true;
-        $this->createEndTransition($graph, $endVertex, $transition);
+      // if (1 === count($process->getInTransitions($transition->getTo())) && empty($process->getOutTransitions($transition->getTo()))) {
+      //   $this->createEndTransition($graph, $endVertex, $transition);
+      // } else if (false === $ended && empty($process->getOutTransitions($transition->getTo()))) {
+      //   $ended = true;
+      //   $this->createEndTransition($graph, $endVertex, $transition);
+      // }
+	 
+	  // Changed commented part to original to avoid error mentioned in line 43
+	  if (empty($process->getOutTransitions($transition->getTo()))) {
+                $this->createEndTransition($graph, $endVertex, $transition);
       }
+	  
     }
 
     return $graph;
