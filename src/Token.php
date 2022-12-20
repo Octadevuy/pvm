@@ -103,7 +103,7 @@ class Token
    */
   public function getCurrentTransition(): TokenTransition
   {
-    if (false == $this->_currentTokenTransition) {
+    if (!isset($this->_currentTokenTransition) || !$this->_currentTokenTransition) {
       $transitions = $this->getTransitions();
 
       $this->_currentTokenTransition = array_pop($transitions);
