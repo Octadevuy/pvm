@@ -1,5 +1,5 @@
 {
-  "name": "enmanuelmd5/pvm",
+  "name": "octadev/pvm",
   "license": "MIT",
   "type": "lib",
   "description": "The library provides us with a frame to build a workflow or a business process such as BPMN. Could execute tasks in parallel or delayed tasks",
