@@ -2,7 +2,6 @@
 
 namespace Formapro\Pvm;
 
-use EndyJasmi\Cuid;
 use Formapro\Pvm\Builder\NodeBuilder;
 use Formapro\Pvm\Builder\TransitionBuilder;
 use function Formapro\Values\add_value;
@@ -133,12 +132,8 @@ class ProcessBuilder
 
   protected function genId(object $elem): string
   {
-    if ($elem instanceof Process) {
+    if ($elem instanceof Process || $elem instanceof Node || $elem instanceof Transition) {
       return Uuid::generate();
-    }
-
-    if ($elem instanceof Node || $elem instanceof Transition) {
-      return Cuid::slug();
     }
 
     throw new \InvalidArgumentException(sprintf('Cannot generate id for object "%s"', get_class($elem)));
