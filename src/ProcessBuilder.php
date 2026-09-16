@@ -12,7 +12,7 @@ class ProcessBuilder
 {
   private $process;
 
-  public function __construct(Process $process = null)
+  public function __construct(?Process $process = null)
   {
     $this->process = $process ?: Process::create();
 
@@ -37,12 +37,12 @@ class ProcessBuilder
     return new NodeBuilder($this, $node);
   }
 
-  public function createNode(string $id = null, string $behavior = null): NodeBuilder
+  public function createNode(?string $id = null, ?string $behavior = null): NodeBuilder
   {
     return $this->createCustomNode(Node::class, $id, $behavior);
   }
 
-  public function createCustomNode(string $class, string $id = null, string $behavior = null): NodeBuilder
+  public function createCustomNode(string $class, ?string $id = null, ?string $behavior = null): NodeBuilder
   {
     /** @var Node $node */
     $node = $class::create();
@@ -66,7 +66,7 @@ class ProcessBuilder
    *
    * @return TransitionBuilder
    */
-  public function createTransition($from, $to, string $name = null): TransitionBuilder
+  public function createTransition($from, $to, ?string $name = null): TransitionBuilder
   {
     if (is_string($from)) {
       $from = $this->process->getNode($from);
@@ -108,12 +108,12 @@ class ProcessBuilder
    *
    * @return TransitionBuilder
    */
-  public function createStartTransition($to, string $name = null): TransitionBuilder
+  public function createStartTransition($to, ?string $name = null): TransitionBuilder
   {
     return $this->createTransition(null, $to, $name);
   }
 
-  public function breakTransition(Transition $transition, Node $node, string $newName = null): TransitionBuilder
+  public function breakTransition(Transition $transition, Node $node, ?string $newName = null): TransitionBuilder
   {
     $oldTo = $transition->getTo();
     $transition->setTo($node);

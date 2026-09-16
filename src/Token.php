@@ -21,6 +21,9 @@ class Token
     setValue as public;
   }
 
+  protected $hookId;
+  protected $objects = [];
+
   /**
    * @var StatefulInterface|null
    */
@@ -40,7 +43,7 @@ class Token
    * Token constructor.
    * @param \Formapro\Pvm\State\StatefulInterface|null $state
    */
-  public function __construct(StatefulInterface $state = null)
+  public function __construct(?StatefulInterface $state = null)
   {
     $this->state = $state ?? new ObjectState();
   }

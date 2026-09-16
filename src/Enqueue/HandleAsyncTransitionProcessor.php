@@ -32,7 +32,7 @@ class HandleAsyncTransitionProcessor implements Processor
    */
   private $tokenLocker;
 
-  public function __construct(ProcessEngine $processEngine, TokenLockerInterface $tokenLocker = null, LoggerInterface $logger = null)
+  public function __construct(ProcessEngine $processEngine, ?TokenLockerInterface $tokenLocker = null, ?LoggerInterface $logger = null)
   {
     $this->processEngine = $processEngine;
     $this->tokenLocker = $tokenLocker ?: new NullTokenLocker();

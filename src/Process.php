@@ -21,6 +21,7 @@ class Process
   }
 
   protected $objects = [];
+  protected $hookId;
 
   /**
    * @param array $data

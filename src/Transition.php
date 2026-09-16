@@ -16,6 +16,9 @@ class Transition
   }
   use CreateTrait;
 
+  protected $hookId;
+  protected $objects = [];
+
   /**
    * @var Process
    */
@@ -43,7 +46,7 @@ class Transition
     return get_value($this, 'name');
   }
 
-  public function setName(string $name = null): void
+  public function setName(?string $name = null): void
   {
     set_value($this, 'name', $name);
   }

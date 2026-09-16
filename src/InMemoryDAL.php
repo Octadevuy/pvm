@@ -8,7 +8,7 @@ use function Formapro\Values\set_object;
 
 class InMemoryDAL implements DAL
 {
-  public function createProcessToken(Process $process, string $id = null): Token
+  public function createProcessToken(Process $process, ?string $id = null): Token
   {
     $token = Token::create();
     $token->setId($id ?: Uuid::generate());
@@ -19,7 +19,7 @@ class InMemoryDAL implements DAL
     return $token;
   }
 
-  public function forkProcessToken(Token $token, string $id = null): Token
+  public function forkProcessToken(Token $token, ?string $id = null): Token
   {
     return $this->createProcessToken($token->getProcess(), $id);
   }

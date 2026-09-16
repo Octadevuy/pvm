@@ -30,7 +30,7 @@ class StandaloneTokenDAL implements DAL
     $this->tokenStorage = $tokenStorage;
   }
 
-  public function createProcessToken(Process $process, string $id = null): Token
+  public function createProcessToken(Process $process, ?string $id = null): Token
   {
     $token = Token::create();
     $token->setId($id ?: Uuid::generate());
@@ -41,7 +41,7 @@ class StandaloneTokenDAL implements DAL
     return $token;
   }
 
-  public function forkProcessToken(Token $token, string $id = null): Token
+  public function forkProcessToken(Token $token, ?string $id = null): Token
   {
     return $this->createProcessToken($token->getProcess(), $id);
   }

@@ -11,6 +11,9 @@ class Node
 
   const SCHEMA = 'http://pvm.forma-pro.com/schemas/Node.json';
 
+  protected $hookId;
+  protected $objects = [];
+
   /**
    * @var Process
    */

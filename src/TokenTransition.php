@@ -21,6 +21,9 @@ class TokenTransition
   const STATE_WAITING = 'waiting';
   const STATE_INTERRUPTED = 'interrupted';
 
+  protected $hookId;
+  protected $objects = [];
+
   /**
    * @var Process
    */
@@ -152,7 +155,7 @@ class TokenTransition
     return get_value($this, 'time');
   }
 
-  public function setReason(string $reason = null)
+  public function setReason(?string $reason = null)
   {
     set_value($this, 'reason', $reason);
   }

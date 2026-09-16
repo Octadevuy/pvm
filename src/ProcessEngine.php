@@ -48,8 +48,8 @@ class ProcessEngine implements DAL
 
   public function __construct(
     BehaviorRegistry $behaviorRegistry,
-    DAL $dal = null,
-    AsyncTransition $asyncTransition = null
+    ?DAL $dal = null,
+    ?AsyncTransition $asyncTransition = null
   )
   {
     $this->behaviorRegistry = $behaviorRegistry;
@@ -74,7 +74,7 @@ class ProcessEngine implements DAL
    * @return Token[]
    * @throws Throwable
    */
-  public function proceed(Token $token, LoggerInterface $logger = null)
+  public function proceed(Token $token, ?LoggerInterface $logger = null)
   {
     $this->logger = $logger ?: new NullLogger();
 
@@ -208,17 +208,17 @@ class ProcessEngine implements DAL
     $this->doProceed($token);
   }
 
-  public function createProcessToken(Process $process, string $id = null): Token
+  public function createProcessToken(Process $process, ?string $id = null): Token
   {
     return $this->dal->createProcessToken($process, $id);
   }
 
-  public function createToken(Process $process, string $id = null): Token
+  public function createToken(Process $process, ?string $id = null): Token
   {
     return $this->dal->createProcessToken($process, $id);
   }
 
-  public function createTokenFor(Transition $transition, int $weight = 1, string $id = null): Token
+  public function createTokenFor(Transition $transition, int $weight = 1, ?string $id = null): Token
   {
     $token = $this->dal->createProcessToken($transition->getProcess(), $id);
     $token->addTransition(TokenTransition::createFor($transition, $weight));
@@ -226,7 +226,7 @@ class ProcessEngine implements DAL
     return $token;
   }
 
-  public function forkProcessToken(Token $token, string $id = null): Token
+  public function forkProcessToken(Token $token, ?string $id = null): Token
   {
     return $this->dal->forkProcessToken($token, $id);
   }

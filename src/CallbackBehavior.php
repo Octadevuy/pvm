@@ -18,7 +18,7 @@ class CallbackBehavior implements Behavior, SignalBehavior
    * @param \Closure $execute
    * @param \Closure $signal
    */
-  public function __construct(\Closure $execute, \Closure $signal = null)
+  public function __construct(\Closure $execute, ?\Closure $signal = null)
   {
     $this->execute = $execute;
     $this->signal = $signal;
