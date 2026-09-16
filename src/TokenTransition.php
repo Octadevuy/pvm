@@ -194,10 +194,9 @@ class TokenTransition
 
   public static function createForNewState(Token $token, string $state): TokenTransition
   {
-    $tokenTransition = static::createFor(
-      $token->getCurrentTransition()->getTransition(),
-      $token->getCurrentTransition()->getTransition()->getWeight()
-    );
+    $transition = $token->getCurrentTransition()->getTransition();
+
+    $tokenTransition = static::createFor($transition, $transition->getWeight());
 
     $tokenTransition->setState($state);
 

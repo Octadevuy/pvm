@@ -13,7 +13,6 @@ use Graphp\GraphViz\GraphViz;
 use Fhaculty\Graph\Edge\Directed;
 use Formapro\Pvm\TokenTransition;
 use function Formapro\Values\get_value;
-use function Formapro\Values\build_object;
 
 class VisualizeFlow
 {
@@ -44,11 +43,14 @@ class VisualizeFlow
 
     foreach ($process->getTransitions() as $transition)
     {
-      if (false == $transition->getFrom() && $transition->getTo()) {
+      $from = $transition->getFrom();
+      $to = $transition->getTo();
+
+      if (false == $from && $to) {
         $this->createStartTransition($graph, $startVertex, $transition);
       }
 
-      if ($transition->getFrom() && $transition->getTo()) {
+      if ($from && $to) {
         $this->createMiddleTransition($graph, $transition);
       }
 
@@ -60,7 +62,7 @@ class VisualizeFlow
       // }
 	 
 	  // Changed commented part to original to avoid error mentioned in line 43
-	  if (empty($process->getOutTransitions($transition->getTo()))) {
+	  if (false === $process->hasOutTransitions($to)) {
                 $this->createEndTransition($graph, $endVertex, $transition);
       }
 	  
@@ -78,6 +80,10 @@ class VisualizeFlow
   {
     $endVertex = $this->createEndVertex($graph);
 
+    // The graph edges do not change here, index them once instead of scanning
+    // all of them for every token transition.
+    $edges = $this->indexTransitionEdges($graph);
+
     foreach ($tokens as $token)
     {
       foreach ($token->getTransitions() as $tokenTransition)
@@ -86,7 +92,13 @@ class VisualizeFlow
         $hasException = get_value($tokenTransition, 'exception', false);
 
         $transition = $tokenTransition->getTransition();
-        $edge = $this->findTransitionEdge($graph, $transition);
+        $transitionId = $transition->getId();
+
+        if (false == isset($edges[$transitionId])) {
+          throw new \LogicException(sprintf('The edge for transition "%s" could not be found.', $transitionId));
+        }
+
+        $edge = $edges[$transitionId];
 
         $alomEdgeAttributes = $edge->getAttribute('alom.graphviz', []);
 
@@ -94,9 +106,11 @@ class VisualizeFlow
           continue;
         }
 
+        $transitionColor = $this->guessTransitionColor($tokenTransition);
+
         $edge->setAttribute('pvm.state', $tokenTransition->getState());
-        $edge->setAttribute('graphviz.color', $this->guessTransitionColor($tokenTransition));
-        $alomEdgeAttributes['color'] = $this->guessTransitionColor($tokenTransition);
+        $edge->setAttribute('graphviz.color', $transitionColor);
+        $alomEdgeAttributes['color'] = $transitionColor;
 
         if ($hasException) {
           $edge->getVertexEnd()->setAttribute('graphviz.color', 'red');
@@ -107,16 +121,18 @@ class VisualizeFlow
           $edge->getVertexEnd()->setAttribute('alom.graphviz', $vertexEndAlomAttributes);
         }
 
-        if (empty($process->getOutTransitions($transition->getTo()))) {
-          $from = $graph->getVertex($transition->getTo()->getId());
+        $transitionTo = $transition->getTo();
+
+        if (false === $process->hasOutTransitions($transitionTo)) {
+          $from = $graph->getVertex($transitionTo->getId());
           $endEdge = $from->getEdgesTo($endVertex)->getEdgeFirst();
 
           if ($edge->getAttribute('pvm.state') === TokenTransition::STATE_PASSED) {
             $endEdge->setAttribute('pvm.state', $tokenTransition->getState());
-            $endEdge->setAttribute('graphviz.color', $this->guessTransitionColor($tokenTransition));
+            $endEdge->setAttribute('graphviz.color', $transitionColor);
 
             $endEdgeAlomAttribute = $endEdge->getAttribute('alom.graphviz', []);
-            $endEdgeAlomAttribute['color'] = $this->guessTransitionColor($tokenTransition);
+            $endEdgeAlomAttribute['color'] = $transitionColor;
             $endEdge->setAttribute('alom.graphviz', $endEdgeAlomAttribute);
           }
         }
@@ -138,12 +154,12 @@ class VisualizeFlow
 
   private function createVertex(Graph $graph, Node $node)
   {
-    /** @var Options $options */
-    $options = build_object(Options::class, get_value($node, 'visual', []));
+    $nodeId = $node->getId();
+    $label = ($node->getLabel() ?: $nodeId);
 
-    $vertex = $graph->createVertex($node->getId());
-    $vertex->setAttribute('graphviz.label', $node->getLabel() ?: $node->getId());
-    $vertex->setAttribute('graphviz.id', $node->getId());
+    $vertex = $graph->createVertex($nodeId);
+    $vertex->setAttribute('graphviz.label', $label);
+    $vertex->setAttribute('graphviz.id', $nodeId);
 
     if (null !== $groupId = $node->getOption('group')) {
       $vertex->setAttribute('alom.graphviz_subgroup', $groupId);
@@ -170,11 +186,10 @@ class VisualizeFlow
 
     $vertex->setAttribute('graphviz.shape', $shape);
 
-    $label = ($node->getLabel() ?: $node->getId());
     $tooltip = $node->getConfig('visual.tooltip') ?? $label;
 
     $vertex->setAttribute('alom.graphviz', [
-      'id' => $node->getId(),
+      'id' => $nodeId,
       'label' => new RawText('"' . $label . '"'),
       'tooltip' => $tooltip,
       'color' => $color,
@@ -206,15 +221,17 @@ class VisualizeFlow
   private function createStartTransition(Graph $graph, Vertex $from, Transition $transition)
   {
     $to = $graph->getVertex($transition->getTo()->getId());
+    $transitionId = $transition->getId();
+    $transitionName = $transition->getName();
 
     $edge = $from->createEdgeTo($to);
-    $edge->setAttribute('pvm.transition_id', $transition->getId());
-    $edge->setAttribute('graphviz.id', $transition->getId());
-    $edge->setAttribute('graphviz.label', $transition->getName());
+    $edge->setAttribute('pvm.transition_id', $transitionId);
+    $edge->setAttribute('graphviz.id', $transitionId);
+    $edge->setAttribute('graphviz.label', $transitionName);
 
     $edge->setAttribute('alom.graphviz', [
-      'label' => $transition->getName(),
-      'id' => $transition->getId(),
+      'label' => $transitionName,
+      'id' => $transitionId,
 	  'fontname' => 'helvetica',
 	  'fontsize' => 10,
     ]);
@@ -223,6 +240,8 @@ class VisualizeFlow
   private function createEndTransition(Graph $graph, Vertex $to, Transition $transition)
   {
     $from = $graph->getVertex($transition->getTo()->getId());
+    $transitionId = $transition->getId();
+    $transitionName = $transition->getName();
 
     if ($from->hasEdgeTo($to)) {
       $edge = $from->getEdgesTo($to)->getEdgeFirst();
@@ -230,13 +249,13 @@ class VisualizeFlow
       $edge = $from->createEdgeTo($to);
     }
 
-    $edge->setAttribute('graphviz.label', $transition->getName());
-    $edge->setAttribute('graphviz.id', $transition->getId());
-    $edge->setAttribute('pvm.transition_id', $transition->getId());
+    $edge->setAttribute('graphviz.label', $transitionName);
+    $edge->setAttribute('graphviz.id', $transitionId);
+    $edge->setAttribute('pvm.transition_id', $transitionId);
 
     $edge->setAttribute('alom.graphviz', [
-      'label' => $transition->getName(),
-      'id' => $transition->getId(),
+      'label' => $transitionName,
+      'id' => $transitionId,
 	  'fontname' => 'helvetica',
 	  'fontsize' => 10,
     ]);
@@ -246,18 +265,20 @@ class VisualizeFlow
   {
     $from = $graph->getVertex($transition->getFrom()->getId());
     $to = $graph->getVertex($transition->getTo()->getId());
+    $transitionId = $transition->getId();
+    $transitionName = $transition->getName();
 
     $edge = $from->createEdgeTo($to);
-    $edge->setAttribute('pvm.transition_id', $transition->getId());
-    $edge->setAttribute('graphviz.id', $transition->getId());
+    $edge->setAttribute('pvm.transition_id', $transitionId);
+    $edge->setAttribute('graphviz.id', $transitionId);
     $edge->setAttribute(
       'graphviz.label',
-      $transition->getName()
+      $transitionName
     );
 
     $edge->setAttribute('alom.graphviz', [
-      'id' => $transition->getId(),
-      'label' => $transition->getName(),
+      'id' => $transitionId,
+      'label' => $transitionName,
 	  'fontname' => 'helvetica',
 	  'fontsize' => 10,
     ]);
@@ -332,16 +353,23 @@ class VisualizeFlow
     return $transitionColor;
   }
 
-  private function findTransitionEdge(Graph $graph, Transition $transition): Directed
+  /**
+   * @return Directed[] Edges indexed by their transition id, the first one wins.
+   */
+  private function indexTransitionEdges(Graph $graph): array
   {
+    $edges = [];
+
     foreach ($graph->getEdges() as $edge) {
       /** @var Directed $edge */
 
-      if ($edge->getAttribute('pvm.transition_id') === $transition->getId()) {
-        return $edge;
+      $transitionId = $edge->getAttribute('pvm.transition_id');
+
+      if (null !== $transitionId && false == isset($edges[$transitionId])) {
+        $edges[$transitionId] = $edge;
       }
     }
 
-    throw new \LogicException(sprintf('The edge for transition "%s" could not be found.', $transition->getId()));
+    return $edges;
   }
 }

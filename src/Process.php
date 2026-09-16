@@ -167,6 +167,14 @@ class Process
   }
 
   /**
+   * Tells whether the node has out transitions without building the Transition objects.
+   */
+  public function hasOutTransitions(Node $node): bool
+  {
+    return false === empty(get_value($this, 'outTransitions.' . $node->getId(), []));
+  }
+
+  /**
    * @return Transition[]
    */
   public function getOutTransitionsWithName(Node $node, string $name): array

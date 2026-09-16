@@ -33,7 +33,9 @@ class ArrayState implements StatefulInterface
         return $default;
       }
 
-      $items = &$items[$segment];
+      // no reference here on purpose: taking one would force a full copy of the
+      // state array on every read.
+      $items = $items[$segment];
     }
 
     return $items;

@@ -46,6 +46,14 @@ class ProcessEngine implements DAL
 
   protected bool $exceptionLogged;
 
+  /**
+   * Whether a real (non null) logger was given to proceed().
+   * Used to skip building debug messages when nobody is listening.
+   *
+   * @var bool
+   */
+  protected bool $logEnabled = false;
+
   public function __construct(
     BehaviorRegistry $behaviorRegistry,
     ?DAL $dal = null,
@@ -64,6 +72,10 @@ class ProcessEngine implements DAL
 
   private function log($text, ...$args)
   {
+    if (false === $this->logEnabled) {
+      return;
+    }
+
     $this->logger->debug(sprintf('[ProcessEngine] ' . $text, ...$args));
   }
 
@@ -77,13 +89,17 @@ class ProcessEngine implements DAL
   public function proceed(Token $token, ?LoggerInterface $logger = null)
   {
     $this->logger = $logger ?: new NullLogger();
+    $this->logEnabled = null !== $logger && false === $logger instanceof NullLogger;
 
     try {
-      $this->log('Start execution: process: %s, token: %s', $token->getProcess()->getId(), $token->getId());
+      if ($this->logEnabled) {
+        $this->log('Start execution: process: %s, token: %s', $token->getProcess()->getId(), $token->getId());
+      }
+
       $this->doProceed($token);
 
       if ($this->asyncTokens) {
-        $this->log(sprintf('Handle async transitions: %s', count($this->asyncTokens)));
+        $this->log('Handle async transitions: %s', count($this->asyncTokens));
 
         $this->asyncTransition->transition($this->asyncTokens);
       }
@@ -93,6 +109,7 @@ class ProcessEngine implements DAL
       $this->asyncTokens = [];
       $this->waitTokens = [];
       $this->logger = null;
+      $this->logEnabled = false;
       $this->exceptionLogged = false;
     }
   }
@@ -111,22 +128,27 @@ class ProcessEngine implements DAL
         ));
       }
 
-      $this->log('On transition: %s -> %s',
-        $currentTransition->getFrom() ? $currentTransition->getFrom()->getLabel() : 'start',
-        $currentTransition->getTo() ? $currentTransition->getTo()->getLabel() : 'end'
-      );
+      if ($this->logEnabled) {
+        $from = $currentTransition->getFrom();
 
-      $behavior = $this->behaviorRegistry->get($node->getBehavior());
+        $this->log('On transition: %s -> %s',
+          $from ? $from->getLabel() : 'start',
+          $node->getLabel()
+        );
+      }
+
+      $behaviorName = $node->getBehavior();
+      $behavior = $this->behaviorRegistry->get($behaviorName);
 
       if ($tokenTransition->isWaiting()) {
         if (false === $behavior instanceof SignalBehavior) {
           throw new \LogicException(sprintf('Expected SignalBehavior'));
         }
 
-        $this->log('Signal behavior: %s', $node->getBehavior());
+        $this->log('Signal behavior: %s', $behaviorName);
         $behaviorResult = $behavior->signal($token);
       } else {
-        $this->log('Execute behavior: %s', $node->getBehavior());
+        $this->log('Execute behavior: %s', $behaviorName);
         $behaviorResult = $behavior->execute($token);
       }
 
@@ -153,10 +175,15 @@ class ProcessEngine implements DAL
       $first = true;
       foreach ($transitions as $transition)
       {
-        $this->log('Next transition: %s -> %s',
-          $transition->getFrom() ? $transition->getFrom()->getLabel() : 'start',
-          $transition->getTo() ? $transition->getTo()->getLabel() : 'end'
-        );
+        if ($this->logEnabled) {
+          $nextFrom = $transition->getFrom();
+          $nextTo = $transition->getTo();
+
+          $this->log('Next transition: %s -> %s',
+            $nextFrom ? $nextFrom->getLabel() : 'start',
+            $nextTo ? $nextTo->getLabel() : 'end'
+          );
+        }
 
         if ($first) {
           $first = false;
